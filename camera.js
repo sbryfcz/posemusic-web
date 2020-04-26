@@ -30,6 +30,13 @@ let currentState = "";
 
 const spotifyApi = new SpotifyWebApi();
 
+const songLookup = {
+    "YMCA": 'spotify:track:7Cp69rNBwU0gaFT8zxExlE',
+    "Baby Shark": 'spotify:track:5ygDXis42ncn6kYG14lEVG',
+    "Disco": 'spotify:track:7qK3JFriCqLorQivsJYG2X',
+    "Thriller": 'spotify:track:7azo4rpSUh8nXgtonC6Pkq'
+}
+
 function updateState(newState) {
     if (currentState === newState) {
         return;
@@ -39,17 +46,14 @@ function updateState(newState) {
 
     const currentDevice = getSelectedDevice();
 
-    if (newState === "YMCA") {
+    if (newState in songLookup) {
         spotifyApi.play({
             device_id: currentDevice,
-            uris: ['spotify:track:7Cp69rNBwU0gaFT8zxExlE']
+            uris: [songLookup[newState]]
         });
     }
-    else if (newState === "Baby Shark") {
-        spotifyApi.play({
-            device_id: currentDevice,
-            uris: ['spotify:track:5ygDXis42ncn6kYG14lEVG']
-        });
+    else {
+        console.error("Could not find the song for the state:", newState)
     }
 
     currentState = newState;
@@ -487,6 +491,11 @@ function detectPoseInRealTime(video, net) {
                         });
                 }
 
+                function getScore(partName) {
+                    var keypoint = keypoints.find(kp => kp.part === partName);
+                    return keypoint.score;
+                }
+
                 function getX(partName) {
                     var keypoint = keypoints.find(kp => kp.part === partName);
                     return keypoint.position.x;
@@ -497,11 +506,41 @@ function detectPoseInRealTime(video, net) {
                     return keypoint.position.y;
                 }
 
+                const headParts = ['node', 'leftEye', 'rightEye', 'leftEar', 'rightEar'];
+
+                function headX() {
+                    let vals = headParts.filter(partName => {
+                        return getScore(partName) > minPartConfidence;
+                    })
+                        .map(partName => {
+                            return getX(partName);
+                        });
+
+                    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+                    return avg;
+                }
+
+                function headY() {
+                    let vals = headParts.filter(partName => {
+                        return getScore(partName) > minPartConfidence;
+                    })
+                        .map(partName => {
+                            return getY(partName);
+                        });
+
+                    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+                    return avg;
+                }
+
                 // check for hands above heads
                 if (isAllConfidentParts(['leftWrist', 'leftElbow', 'leftShoulder', 'rightWrist', 'rightElbow', 'rightShoulder']) &&
                     (
                         getY('leftWrist') < getY('leftElbow') && getY('leftElbow') < getY('leftShoulder') &&
                         getY('rightWrist') < getY('rightElbow') && getY('rightElbow') < getY('rightShoulder')
+                    ) &&
+                    (
+                        (getX('leftWrist') < getHeadX() && getX('rightWrist') > getHeadX()) ||
+                        (getX('leftWrist') > getHeadX() && getX('rightWrist') < getHeadX())
                     )
                 ) {
                     updateState('YMCA');
@@ -515,9 +554,30 @@ function detectPoseInRealTime(video, net) {
                         ||
                         ((getY('leftWrist') > getY('leftElbow') && getY('leftElbow') > getY('leftShoulder') &&
                             getY('rightWrist') < getY('rightElbow') && getY('rightElbow') < getY('rightShoulder')))
+                    ) &&
+                    (
+                        (getX('leftWrist') < getHeadX() && getX('rightWrist') < getHeadX()) ||
+                        (getX('leftWrist') > getHeadX() && getX('rightWrist') > getHeadX())
                     )
                 ) {
                     updateState('Baby Shark');
+                }
+                // check for disco
+                else if (
+                    isAllConfidentParts(['leftWrist', 'leftElbow', 'leftShoulder', 'rightWrist', 'rightElbow', 'rightShoulder']) &&
+                    (
+                        (getY('leftWrist') < getY('leftElbow') && getY('leftElbow') < getY('leftShoulder') &&
+                            getY('rightWrist') > getY('rightElbow') && getY('rightElbow') > getY('rightShoulder'))
+                        ||
+                        ((getY('leftWrist') > getY('leftElbow') && getY('leftElbow') > getY('leftShoulder') &&
+                            getY('rightWrist') < getY('rightElbow') && getY('rightElbow') < getY('rightShoulder')))
+                    ) &&
+                    (
+                        (getX('leftWrist') < getHeadX() && getX('rightWrist') > getHeadX()) ||
+                        (getX('leftWrist') > getHeadX() && getX('rightWrist') < getHeadX())
+                    )
+                ) {
+                    updateState('Disco');
                 }
 
             }
@@ -578,7 +638,8 @@ if (urlParams.has('access_token')) {
 
 // check if logged in to spotify
 if (sessionStorage.getItem("spotify_access_code") == null) {
-    window.location.href = "https://accounts.spotify.com/authorize?client_id=a1dfceece4a24c249303bcdd0a3f865e&redirect_uri=http:%2F%2Flocalhost:1234&scope=user-modify-playback-state%20user-read-playback-state&response_type=token"
+    var redirect = encodeURI(window.location.origin);
+    window.location.href = "https://accounts.spotify.com/authorize?client_id=a1dfceece4a24c249303bcdd0a3f865e&redirect_uri=" + redirect + "&scope=user-modify-playback-state%20user-read-playback-state&response_type=token"
 }
 else {
     var accessToken = sessionStorage.getItem("spotify_access_code");
