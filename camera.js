@@ -578,7 +578,7 @@ if (urlParams.has('access_token')) {
 
 // check if logged in to spotify
 if (sessionStorage.getItem("spotify_access_code") == null) {
-    window.location.href = "https://accounts.spotify.com/authorize?client_id=a1dfceece4a24c249303bcdd0a3f865e&redirect_uri=http:%2F%2Flocalhost:1234%2Fcamera.html&scope=user-modify-playback-state%20user-read-playback-state&response_type=token"
+    window.location.href = "https://accounts.spotify.com/authorize?client_id=a1dfceece4a24c249303bcdd0a3f865e&redirect_uri=http:%2F%2Flocalhost:1234&scope=user-modify-playback-state%20user-read-playback-state&response_type=token"
 }
 else {
     var accessToken = sessionStorage.getItem("spotify_access_code");
