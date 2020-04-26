@@ -37,7 +37,7 @@ const songLookup = {
     "Thriller": 'spotify:track:7azo4rpSUh8nXgtonC6Pkq'
 }
 
-function updateState(newState) {
+async function updateState(newState) {
     if (currentState === newState) {
         return;
     }
@@ -47,10 +47,17 @@ function updateState(newState) {
     const currentDevice = getSelectedDevice();
 
     if (newState in songLookup) {
-        spotifyApi.play({
-            device_id: currentDevice,
-            uris: [songLookup[newState]]
-        });
+        try {
+            await spotifyApi.play({
+                device_id: currentDevice,
+                uris: [songLookup[newState]]
+            });
+        }
+        catch (ex) {
+            if (ex.status === 401) {
+                authorize();
+            }
+        }
     }
     else {
         console.error("Could not find the song for the state:", newState)
@@ -477,7 +484,7 @@ function detectPoseInRealTime(video, net) {
 
         // try to detect the pose for music
 
-        poses.forEach(({ score, keypoints }) => {
+        poses.forEach(async ({ score, keypoints }) => {
             if (score >= minPoseConfidence) {
                 // console.log(keypoints);
 
@@ -506,7 +513,7 @@ function detectPoseInRealTime(video, net) {
                     return keypoint.position.y;
                 }
 
-                const headParts = ['node', 'leftEye', 'rightEye', 'leftEar', 'rightEar'];
+                const headParts = ['nose', 'leftEye', 'rightEye', 'leftEar', 'rightEar'];
 
                 function headX() {
                     let vals = headParts.filter(partName => {
@@ -539,11 +546,11 @@ function detectPoseInRealTime(video, net) {
                         getY('rightWrist') < getY('rightElbow') && getY('rightElbow') < getY('rightShoulder')
                     ) &&
                     (
-                        (getX('leftWrist') < getHeadX() && getX('rightWrist') > getHeadX()) ||
-                        (getX('leftWrist') > getHeadX() && getX('rightWrist') < getHeadX())
+                        (getX('leftWrist') < headX() && getX('rightWrist') > headX()) ||
+                        (getX('leftWrist') > headX() && getX('rightWrist') < headX())
                     )
                 ) {
-                    updateState('YMCA');
+                    await updateState('YMCA');
                 }
                 // check for sharks
                 else if (
@@ -556,11 +563,11 @@ function detectPoseInRealTime(video, net) {
                             getY('rightWrist') < getY('rightElbow') && getY('rightElbow') < getY('rightShoulder')))
                     ) &&
                     (
-                        (getX('leftWrist') < getHeadX() && getX('rightWrist') < getHeadX()) ||
-                        (getX('leftWrist') > getHeadX() && getX('rightWrist') > getHeadX())
+                        (getX('leftWrist') < headX() && getX('rightWrist') < headX()) ||
+                        (getX('leftWrist') > headX() && getX('rightWrist') > headX())
                     )
                 ) {
-                    updateState('Baby Shark');
+                    await updateState('Baby Shark');
                 }
                 // check for disco
                 else if (
@@ -573,11 +580,26 @@ function detectPoseInRealTime(video, net) {
                             getY('rightWrist') < getY('rightElbow') && getY('rightElbow') < getY('rightShoulder')))
                     ) &&
                     (
-                        (getX('leftWrist') < getHeadX() && getX('rightWrist') > getHeadX()) ||
-                        (getX('leftWrist') > getHeadX() && getX('rightWrist') < getHeadX())
+                        (getX('leftWrist') < headX() && getX('rightWrist') > headX()) ||
+                        (getX('leftWrist') > headX() && getX('rightWrist') < headX())
                     )
                 ) {
-                    updateState('Disco');
+                    await updateState('Disco');
+                }
+                // check for thriller
+                else if (
+                    isAllConfidentParts(['leftWrist', 'leftElbow', 'rightWrist', 'rightElbow']) &&
+                    (
+                        (getY('leftWrist') < getY('leftElbow') &&
+                            getY('rightWrist') < getY('rightElbow'))
+
+                    ) &&
+                    (
+                        (getX('leftWrist') < headX() && getX('rightWrist') < headX()) ||
+                        (getX('leftWrist') > headX() && getX('rightWrist') > headX())
+                    )
+                ) {
+                    await updateState('Thriller');
                 }
 
             }
@@ -636,10 +658,14 @@ if (urlParams.has('access_token')) {
     sessionStorage.setItem('spotify_access_code', urlParams.get('access_token'));
 }
 
+function authorize() {
+    var redirect = encodeURI(window.location.origin);
+    window.location.href = "https://accounts.spotify.com/authorize?client_id=a1dfceece4a24c249303bcdd0a3f865e&redirect_uri=" + redirect + "&scope=user-modify-playback-state%20user-read-playback-state&response_type=token";
+}
+
 // check if logged in to spotify
 if (sessionStorage.getItem("spotify_access_code") == null) {
-    var redirect = encodeURI(window.location.origin);
-    window.location.href = "https://accounts.spotify.com/authorize?client_id=a1dfceece4a24c249303bcdd0a3f865e&redirect_uri=" + redirect + "&scope=user-modify-playback-state%20user-read-playback-state&response_type=token"
+    authorize();
 }
 else {
     var accessToken = sessionStorage.getItem("spotify_access_code");
@@ -647,7 +673,15 @@ else {
 }
 
 async function updateDeviceList() {
-    var deviceResponse = await spotifyApi.getMyDevices();
+    let deviceResponse;
+    try {
+        deviceResponse = await spotifyApi.getMyDevices();
+    }
+    catch (ex) {
+        if (ex.status === 401) {
+            authorize();
+        }
+    }
     var devices = deviceResponse.devices;
     var devicesSelect = document.querySelector('#devices');
     devicesSelect.innerHTML = "";
