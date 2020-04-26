@@ -42698,6 +42698,53 @@ async function updateState(newState) {
 
   currentState = newState;
 }
+
+function drawImageProp(ctx, img, x, y, w, h, offsetX, offsetY) {
+  if (arguments.length === 2) {
+    x = y = 0;
+    w = ctx.canvas.width;
+    h = ctx.canvas.height;
+  } // default offset is center
+
+
+  offsetX = typeof offsetX === "number" ? offsetX : 0.5;
+  offsetY = typeof offsetY === "number" ? offsetY : 0.5; // keep bounds [0.0, 1.0]
+
+  if (offsetX < 0) offsetX = 0;
+  if (offsetY < 0) offsetY = 0;
+  if (offsetX > 1) offsetX = 1;
+  if (offsetY > 1) offsetY = 1;
+  var iw = img.width,
+      ih = img.height,
+      r = Math.min(w / iw, h / ih),
+      nw = iw * r,
+      // new prop. width
+  nh = ih * r,
+      // new prop. height
+  cx,
+      cy,
+      cw,
+      ch,
+      ar = 1; // decide which gap to fill    
+
+  if (nw < w) ar = w / nw;
+  if (Math.abs(ar - 1) < 1e-14 && nh < h) ar = h / nh; // updated
+
+  nw *= ar;
+  nh *= ar; // calc source rectangle
+
+  cw = iw / (nw / w);
+  ch = ih / (nh / h);
+  cx = (iw - cw) * offsetX;
+  cy = (ih - ch) * offsetY; // make sure source rectangle is valid
+
+  if (cx < 0) cx = 0;
+  if (cy < 0) cy = 0;
+  if (cw > iw) cw = iw;
+  if (ch > ih) ch = ih; // fill image in dest. rectangle
+
+  ctx.drawImage(img, cx, cy, cw, ch, x, y, w, h);
+}
 /**
  * Loads a the camera to be used in the demo
  *
@@ -42945,6 +42992,23 @@ function setupFPS() {
 
   document.getElementById('main').appendChild(stats.dom);
 }
+
+function calculateSize(srcSize, dstSize) {
+  var srcRatio = srcSize.width / srcSize.height;
+  var dstRatio = dstSize.width / dstSize.height;
+
+  if (dstRatio > srcRatio) {
+    return {
+      width: dstSize.height * srcRatio,
+      height: dstSize.height
+    };
+  } else {
+    return {
+      width: dstSize.width,
+      height: dstSize.width / srcRatio
+    };
+  }
+}
 /**
  * Feeds an image to posenet to estimate poses - this is where the magic
  * happens. This function loops with a requestAnimationFrame method.
@@ -43075,11 +43139,22 @@ function detectPoseInRealTime(video, net) {
     ctx.clearRect(0, 0, videoWidth, videoHeight);
 
     if (guiState.output.showVideo) {
+      // var videoSize = { width: video.videoWidth, height: video.videoHeight };
+      // var canvasSize = { width: canvas.width, height: canvas.height };
+      // var renderSize = calculateSize(videoSize, canvasSize);
+      // // console.log(renderSize);
+      // // var xOffset = (canvasSize.width - renderSize.width) / 2;
+      // // ctx.drawImage(video, xOffset, 0, renderSize.width, renderSize.height);
+      // ctx.save();
+      // ctx.scale(-1, 1);
+      // ctx.translate(-renderSize.width, 0);
+      // ctx.drawImage(video, 0, 0, renderSize.width, renderSize.height);
+      // ctx.restore();
       ctx.save();
       ctx.scale(-1, 1);
       ctx.translate(-videoWidth, 0);
       ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
-      ctx.restore();
+      ctx.restore(); // drawImageProp(ctx, video, 0, 0, canvas.scrollWidth, canvas.scrollHeight);
     } // For each pose (i.e. person) detected in an image, loop through the poses
     // and draw the resulting skeleton and keypoints if over certain confidence
     // scores
@@ -43222,16 +43297,28 @@ if (urlParams.has('access_token')) {
 }
 
 function authorize() {
-  var redirect = encodeURI(window.location.origin);
-  window.location.href = "https://accounts.spotify.com/authorize?client_id=a1dfceece4a24c249303bcdd0a3f865e&redirect_uri=" + redirect + "&scope=user-modify-playback-state%20user-read-playback-state&response_type=token";
-} // check if logged in to spotify
+  var redirect = 'unknown';
 
+  if (window.location.hostname === 'localhost') {
+    redirect = encodeURI(window.location.origin);
+  } else {
+    redirect = encodeURI(window.location.origin + '/posemusic-web');
+  }
+
+  window.location.href = "https://accounts.spotify.com/authorize?client_id=a1dfceece4a24c249303bcdd0a3f865e&redirect_uri=" + redirect + "&scope=user-modify-playback-state%20user-read-playback-state&response_type=token";
+}
+
+document.getElementById("login-btn").addEventListener("click", authorize); // check if logged in to spotify
 
 if (sessionStorage.getItem("spotify_access_code") == null) {
-  authorize();
+  // wait for authorize button to be clicked
+  return;
 } else {
   var accessToken = sessionStorage.getItem("spotify_access_code");
-  spotifyApi.setAccessToken(accessToken);
+  spotifyApi.setAccessToken(accessToken); // hide the login button
+
+  document.getElementById("login-btn").style.display = "none";
+  document.getElementById("page-content").style.display = "block";
 }
 
 async function updateDeviceList() {
