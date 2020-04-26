@@ -152,7 +152,9 @@
             text-align: center;
             margin: auto;
             background: white;
+            border: 2px solid grey;
             border-radius: 5px;
+            margin-bottom: 10px;
         }
 
         #main {
@@ -236,6 +238,11 @@
         #pose-examples img {
             height: 100px;
         }
+
+        h2 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
     </style>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
@@ -253,14 +260,14 @@
             </div>
             <div class="sk-spinner sk-spinner-pulse"></div>
         </div>
+        <div style="text-align: center;">
+            <label for="devices">Select Spotify Device:</label>
+            <select id="devices" name="devices"></select>
+        </div>
         <div id='main' style='display:none'>
             <video id="video" playsinline style="display: none;">
             </video>
             <canvas id="output" />
-        </div>
-        <div style="text-align: center;">
-            <label for="devices">Spotify Device:</label>
-            <select id="devices" name="devices"></select>
         </div>
     </div>
     <div class="footer">

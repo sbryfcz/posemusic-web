@@ -22,7 +22,7 @@ import SpotifyWebApi from 'spotify-web-api-js';
 
 import { drawBoundingBox, drawKeypoints, drawSkeleton, isMobile, toggleLoadingUI, tryResNetButtonName, tryResNetButtonText, updateTryResNetButtonDatGuiCss } from './demo_util';
 
-const videoWidth = 600;
+const videoWidth = 889;
 const videoHeight = 500;
 const stats = new Stats();
 
@@ -220,6 +220,7 @@ function setupGui(cameras, net) {
 
     const gui = new dat.GUI({ width: 300 });
     gui.close();
+    dat.GUI.toggleHide();
 
     let architectureController = null;
     guiState[tryResNetButtonName] = function () {
@@ -738,7 +739,7 @@ export async function bindPage() {
     }
 
     setupGui([], net);
-    setupFPS();
+    // setupFPS();
     detectPoseInRealTime(video, net);
 }
 

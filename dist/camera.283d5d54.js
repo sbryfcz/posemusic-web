@@ -42643,7 +42643,7 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
  * limitations under the License.
  * =============================================================================
  */
-const videoWidth = 600;
+const videoWidth = 889;
 const videoHeight = 500;
 const stats = new _stats.default();
 let currentState = "";
@@ -42831,6 +42831,9 @@ function setupGui(cameras, net) {
     width: 300
   });
   gui.close();
+
+  _dat.default.GUI.toggleHide();
+
   let architectureController = null;
 
   guiState[_demo_util.tryResNetButtonName] = function () {
@@ -43280,8 +43283,8 @@ async function bindPage() {
     throw e;
   }
 
-  setupGui([], net);
-  setupFPS();
+  setupGui([], net); // setupFPS();
+
   detectPoseInRealTime(video, net);
 } // check if access code in browser path
 
