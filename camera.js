@@ -49,6 +49,11 @@ const songLookup = {
     }
 }
 
+function getSelectedDevice() {
+    var e = document.getElementById("devices");
+    return e.options[e.selectedIndex].value;
+}
+
 async function updateState(newState) {
     if (currentState === newState) {
         return;
@@ -802,11 +807,6 @@ else {
             optionElement.text = device.name;
             devicesSelect.appendChild(optionElement);
         });
-    }
-
-    function getSelectedDevice() {
-        var e = document.getElementById("devices");
-        return e.options[e.selectedIndex].value;
     }
 
     updateDeviceList();
