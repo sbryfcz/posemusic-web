@@ -676,7 +676,7 @@ if (urlParams.has('access_token')) {
 }
 
 function authorize() {
-    var redirect = encodeURI(window.location.origin);
+    var redirect = encodeURI(window.location.origin + '/posemusic-web');
     window.location.href = "https://accounts.spotify.com/authorize?client_id=a1dfceece4a24c249303bcdd0a3f865e&redirect_uri=" + redirect + "&scope=user-modify-playback-state%20user-read-playback-state&response_type=token";
 }
 
