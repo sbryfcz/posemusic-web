@@ -772,7 +772,7 @@ document.getElementById("login-btn").addEventListener("click", authorize);
 // check if logged in to spotify
 if (sessionStorage.getItem("spotify_access_code") == null) {
     // wait for authorize button to be clicked
-    return;
+    // return;
 }
 else {
     var accessToken = sessionStorage.getItem("spotify_access_code");
@@ -781,37 +781,38 @@ else {
     // hide the login button
     document.getElementById("login-btn").style.display = "none";
     document.getElementById("page-content").style.display = "block";
-}
 
-async function updateDeviceList() {
-    let deviceResponse;
-    try {
-        deviceResponse = await spotifyApi.getMyDevices();
-    }
-    catch (ex) {
-        if (ex.status === 401) {
-            authorize();
+
+    async function updateDeviceList() {
+        let deviceResponse;
+        try {
+            deviceResponse = await spotifyApi.getMyDevices();
         }
+        catch (ex) {
+            if (ex.status === 401) {
+                authorize();
+            }
+        }
+        var devices = deviceResponse.devices;
+        var devicesSelect = document.querySelector('#devices');
+        devicesSelect.innerHTML = "";
+        devices.forEach(device => {
+            var optionElement = document.createElement('option');
+            optionElement.value = device.id
+            optionElement.text = device.name;
+            devicesSelect.appendChild(optionElement);
+        });
     }
-    var devices = deviceResponse.devices;
-    var devicesSelect = document.querySelector('#devices');
-    devicesSelect.innerHTML = "";
-    devices.forEach(device => {
-        var optionElement = document.createElement('option');
-        optionElement.value = device.id
-        optionElement.text = device.name;
-        devicesSelect.appendChild(optionElement);
-    });
+
+    function getSelectedDevice() {
+        var e = document.getElementById("devices");
+        return e.options[e.selectedIndex].value;
+    }
+
+    updateDeviceList();
+
+    navigator.getUserMedia = navigator.getUserMedia ||
+        navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    // kick off the demo
+    bindPage();
 }
-
-function getSelectedDevice() {
-    var e = document.getElementById("devices");
-    return e.options[e.selectedIndex].value;
-}
-
-updateDeviceList();
-
-navigator.getUserMedia = navigator.getUserMedia ||
-    navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-// kick off the demo
-bindPage();
