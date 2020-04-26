@@ -31,10 +31,22 @@ let currentState = "";
 const spotifyApi = new SpotifyWebApi();
 
 const songLookup = {
-    "YMCA": 'spotify:track:7Cp69rNBwU0gaFT8zxExlE',
-    "Baby Shark": 'spotify:track:5ygDXis42ncn6kYG14lEVG',
-    "Disco": 'spotify:track:7qK3JFriCqLorQivsJYG2X',
-    "Thriller": 'spotify:track:7azo4rpSUh8nXgtonC6Pkq'
+    "YMCA": {
+        uri: 'spotify:track:7Cp69rNBwU0gaFT8zxExlE',
+        position: 58 * 1000
+    },
+    "Baby Shark": {
+        uri: 'spotify:track:5ygDXis42ncn6kYG14lEVG',
+        position: 4 * 1000
+    },
+    "Disco": {
+        uri: 'spotify:track:7qK3JFriCqLorQivsJYG2X',
+        position: 0
+    },
+    "Thriller": {
+        uri: 'spotify:track:7azo4rpSUh8nXgtonC6Pkq',
+        position: 90.5 * 1000
+    }
 }
 
 async function updateState(newState) {
@@ -47,11 +59,16 @@ async function updateState(newState) {
     const currentDevice = getSelectedDevice();
 
     if (newState in songLookup) {
+        var song = songLookup[newState];
         try {
             await spotifyApi.play({
                 device_id: currentDevice,
-                uris: [songLookup[newState]]
+                uris: [song.uri]
             });
+
+            if (song.position > 0) {
+                await spotifyApi.seek(song.position);
+            }
         }
         catch (ex) {
             if (ex.status === 401) {
